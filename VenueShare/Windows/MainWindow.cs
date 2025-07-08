@@ -6,7 +6,7 @@ using Dalamud.Interface.Windowing;
 using ImGuiNET;
 using Lumina.Excel.Sheets;
 
-namespace SamplePlugin.Windows;
+namespace VenueShare.Windows;
 
 public class MainWindow : Window, IDisposable
 {
