@@ -251,7 +251,9 @@ In the VenueShare plugin configuration:
 ## 🚀 Usage
 
 **In FFXIV:**
+- `/venuesettings` - Open plugin configuration window
 - `/venueshare` - Share current location with Discord
+- `/locationtest` - Test location detection
 - Open plugin window for manual venue search
 
 **In Discord:**

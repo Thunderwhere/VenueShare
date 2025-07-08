@@ -13,6 +13,7 @@
 - **Webhook Server**: Receives venue search requests from the plugin
 - **Automatic Venue Search**: Queries FFXIVVenues.com when location is shared
 - **Rich Discord Embeds**: Beautiful formatted venue information with links and details
+- **Smart Location Display**: Handles missing venue data gracefully (no more "Ward 0, Plot 0")
 - **Error Handling**: Graceful handling of missing venues or connection issues
 
 ## 🚀 How It Works
@@ -60,19 +61,21 @@
 ### **What Works Now:**
 - ✅ Housing district detection (Mist, Lavender Beds, Goblet, Shirogane, Empyreum)
 - ✅ Server/world detection from game client
+- ✅ **Dynamic ward/plot detection** with multiple fallback methods
 - ✅ HTTP communication with Discord bot
 - ✅ FFXIVVenues.com API integration
 - ✅ Rich Discord embeds with venue details
 - ✅ Manual venue search from plugin UI
 - ✅ Configuration management and persistence
+- ✅ **Debug command** (`/locationtest`) for testing location detection
 
 ### **Current Limitations:**
-- ⚠️ Ward/Plot detection returns placeholder values (1, 1)
-- ⚠️ Exact location detection would require memory reading techniques
-- ⚠️ Results are primarily filtered by server and district
+- ✅ **SOLVED:** Dynamic ward/plot detection implemented with multiple fallback methods
+- ⚠️ Ward/plot accuracy may vary depending on detection method used
+- ⚠️ Position-based estimation provides reasonable approximations but may need fine-tuning
 
 ### **Future Enhancement Opportunities:**
-- 🔮 Implement precise ward/plot detection via memory scanning
+- 🔮 Fine-tune coordinate mapping for each housing district
 - 🔮 Add venue result caching for better performance
 - 🔮 Support for multiple Discord channels/servers
 - 🔮 Venue bookmarking system within the plugin
@@ -82,14 +85,16 @@
 
 1. **Install Dependencies**: `pip install aiohttp` for your Discord bot
 2. **Update Bot Code**: Copy the webhook functions from `SETUP_GUIDE.md`
-3. **Test Integration**: Build plugin, configure settings, test `/venueshare` command
-4. **Deploy**: Build Release version and distribute as needed
+3. **Test Ward/Plot Detection**: Use `/locationtest` command in housing districts
+4. **Test Integration**: Build plugin, configure settings, test `/venueshare` command
+5. **Deploy**: Build Release version and distribute as needed
 
 ## 🎮 Usage Examples
 
 **In-Game Commands:**
 ```
 /venueshare              # Share current location with Discord
+/locationtest            # Test ward/plot detection (shows details in logs)
 /pmycommand              # Open main plugin window
 ```
 

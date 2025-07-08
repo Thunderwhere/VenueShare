@@ -19,8 +19,9 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static IDataManager DataManager { get; private set; } = null!;
     [PluginService] internal static IPluginLog Log { get; private set; } = null!;
 
-    private const string CommandName = "/pmycommand";
+    private const string CommandName = "/venuesettings";
     private const string VenueShareCommand = "/venueshare";
+    private const string LocationTestCommand = "/locationtest";
 
     public Configuration Configuration { get; init; }
     public LocationService LocationService { get; init; }
@@ -38,23 +39,25 @@ public sealed class Plugin : IDalamudPlugin
         LocationService = new LocationService(ClientState, DataManager, Log);
         DiscordBotService = new DiscordBotService(Configuration, Log);
 
-        // you might normally want to embed resources and load them from the manifest stream
-        var goatImagePath = Path.Combine(PluginInterface.AssemblyLocation.Directory?.FullName!, "goat.png");
-
         ConfigWindow = new ConfigWindow(this);
-        MainWindow = new MainWindow(this, goatImagePath);
+        MainWindow = new MainWindow(this);
 
         WindowSystem.AddWindow(ConfigWindow);
         WindowSystem.AddWindow(MainWindow);
 
         CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
         {
-            HelpMessage = "A useful message to display in /xlhelp"
+            HelpMessage = "Open VenueShare configuration window"
         });
 
         CommandManager.AddHandler(VenueShareCommand, new CommandInfo(OnVenueShareCommand)
         {
             HelpMessage = "Share current venue location with Discord bot"
+        });
+
+        CommandManager.AddHandler(LocationTestCommand, new CommandInfo(OnLocationTestCommand)
+        {
+            HelpMessage = "Test current location detection (shows ward/plot in chat)"
         });
 
         PluginInterface.UiBuilder.Draw += DrawUI;
@@ -66,10 +69,9 @@ public sealed class Plugin : IDalamudPlugin
         // Adds another button that is doing the same but for the main ui of the plugin
         PluginInterface.UiBuilder.OpenMainUi += ToggleMainUI;
 
-        // Add a simple message to the log with level set to information
+        // Add initialization message to the log
         // Use /xllog to open the log window in-game
-        // Example Output: 00:57:54.959 | INF | [VenueShare] ===A cool log message from Sample Plugin===
-        Log.Information($"===A cool log message from {PluginInterface.Manifest.Name}===");
+        Log.Information($"VenueShare plugin initialized - Discord integration ready");
     }
 
     public void Dispose()
@@ -82,6 +84,7 @@ public sealed class Plugin : IDalamudPlugin
 
         CommandManager.RemoveHandler(CommandName);
         CommandManager.RemoveHandler(VenueShareCommand);
+        CommandManager.RemoveHandler(LocationTestCommand);
     }
 
     private void OnCommand(string command, string args)
@@ -94,19 +97,19 @@ public sealed class Plugin : IDalamudPlugin
     {
         try
         {
-            var location = LocationService.GetCurrentLocation();
-            if (location == null)
+            var currentLocation = LocationService.GetCurrentLocation();
+            if (currentLocation == null)
             {
                 Log.Info("Not currently in a housing district or unable to detect location");
                 return;
             }
 
             var playerName = ClientState.LocalPlayer?.Name.TextValue ?? "Unknown Player";
-            var success = await DiscordBotService.SendVenueSearchRequestAsync(location, playerName);
+            var success = await DiscordBotService.SendVenueSearchRequestAsync(currentLocation, playerName);
             
             if (success)
             {
-                Log.Info($"Venue search request sent for {location.District} Ward {location.Ward} Plot {location.Plot} on {location.Server}");
+                Log.Info($"Venue search request sent for {currentLocation.District} Ward {currentLocation.Ward} Plot {currentLocation.Plot} on {currentLocation.Server}");
             }
             else
             {
@@ -116,6 +119,40 @@ public sealed class Plugin : IDalamudPlugin
         catch (Exception ex)
         {
             Log.Error(ex, "Error processing venue share command");
+        }
+    }
+
+    private void OnLocationTestCommand(string command, string args)
+    {
+        try
+        {
+            var currentLocation = LocationService.GetCurrentLocation();
+            if (currentLocation == null)
+            {
+                Log.Info("❌ Not currently in a housing district or unable to detect location");
+                return;
+            }
+
+            Log.Info($"📍 Location Test Results:");
+            Log.Info($"   Server: {currentLocation.Server}");
+            Log.Info($"   District: {currentLocation.District}");
+            Log.Info($"   Ward: {currentLocation.Ward}");
+            Log.Info($"   Plot: {currentLocation.Plot}");
+            Log.Info($"   Territory: {currentLocation.TerritoryName} (ID: {currentLocation.TerritoryId})");
+
+            // Also show player position for debugging
+            var player = ClientState.LocalPlayer;
+            if (player != null)
+            {
+                var pos = player.Position;
+                Log.Info($"   Player Position: X={pos.X:F1}, Y={pos.Y:F1}, Z={pos.Z:F1}");
+            }
+            
+            Log.Info("📝 Use this info to verify ward/plot detection accuracy!");
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error testing location detection");
         }
     }
 

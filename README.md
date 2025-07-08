@@ -1,52 +1,65 @@
-> ⚠️ **Don't click Fork!**
-> 
-> This is a GitHub Template repo. If you want to use this for a plugin, just [use this template][new-repo] to make a new repo!
->
-> ![image](https://github.com/goatcorp/SamplePlugin/assets/16760685/d9732094-e1ed-4769-a70b-58ed2b92580c)
+# VenueShare - FFXIV Plugin
 
-# SamplePlugin
+A Dalamud plugin that integrates with Discord bots to share venue location information and search the FFXIVVenues.com database for nearby venues.
 
-[![Use This Template badge](https://img.shields.io/badge/Use%20This%20Template-0?logo=github&labelColor=grey)][new-repo]
+## Features
 
+- **Automatic Location Detection**: Detects your current housing district, ward, and plot
+- **Discord Integration**: Sends venue location data to Discord via webhook
+- **Venue Search**: Search for venues at your current location using the FFXIVVenues.com API
+- **Simple Configuration**: Easy setup through in-game settings window
 
-Simple example plugin for Dalamud.
+## Commands
 
-This is not designed to be the simplest possible example, but it is also not designed to cover everything you might want to do. For more detailed questions, come ask in [the Discord](https://discord.gg/holdshift).
+- `/venuesettings` - Open VenueShare configuration window
+- `/venueshare` - Share current venue location to Discord
+- `/locationtest` - Test location detection (shows current position info)
 
-## Main Points
+## Setup
 
-* Simple functional plugin
-  * Slash command
-  * Main UI
-  * Settings UI
-  * Image loading
-  * Plugin json
-* Simple, slightly-improved plugin configuration handling
-* Project organization
-  * Copies all necessary plugin files to the output directory
-    * Does not copy dependencies that are provided by dalamud
-    * Output directory can be zipped directly and have exactly what is required
-  * Hides data files from visual studio to reduce clutter
-    * Also allows having data files in different paths than VS would usually allow if done in the IDE directly
+1. **Configure Discord Bot**: See `SETUP_GUIDE.md` for complete Discord bot integration instructions
+2. **Install Plugin**: Place the plugin DLL in your Dalamud plugins folder
+3. **Configure Settings**: Use `/venuesettings` to open settings and configure:
+   - Discord Bot URL (e.g., `http://localhost:8080`)
+   - Discord Channel ID where venue info should be posted
+   - Enable Venue Sharing checkbox
 
+## How It Works
 
-The intention is less that any of this is used directly in other projects, and more to show how similar things can be done.
+1. **Location Detection**: The plugin monitors your in-game position and territory to detect when you're in a housing district
+2. **Ward/Plot Detection**: Uses multiple methods to determine the specific ward and plot number
+3. **Discord Communication**: Sends HTTP requests to your Discord bot with location data
+4. **Venue Lookup**: The Discord bot searches FFXIVVenues.com for venues at the detected location
+5. **Discord Posting**: Results are posted to your configured Discord channel
 
-## How To Use
+## Technical Details
 
-### Getting Started
+### Core Components
 
-To begin, [clone this template repository][new-repo] to your own GitHub account. This will automatically bring in everything you need to get a jumpstart on development. You do not need to fork this repository unless you intend to contribute modifications to it.
+- **LocationService**: Handles detection of server, district, ward, and plot
+- **DiscordBotService**: Manages HTTP communication with Discord bot
+- **VenueLocation Model**: Data structure for location information
+- **Configuration**: Persistent settings storage
 
-Be sure to also check out the [Dalamud Developer Docs][dalamud-docs] for helpful information about building your own plugin. The Developer Docs includes helpful information about all sorts of things, including [how to submit][submit] your newly-created plugin to the official repository. Assuming you use this template repository, the provided project build configuration and license are already chosen to make everything a breeze.
+### Location Detection Methods
 
-[new-repo]: https://github.com/new?template_name=SamplePlugin&template_owner=goatcorp
-[dalamud-docs]: https://dalamud.dev
-[submit]: https://dalamud.dev/plugin-development/plugin-submission
+- Memory scanning for ward/plot information
+- Map territory analysis
+- Position-based detection as fallback
+- Server name detection from game state
 
-### Prerequisites
+For detailed setup instructions, see `SETUP_GUIDE.md`.
 
-SamplePlugin assumes all the following prerequisites are met:
+## Development
+
+Built with:
+- .NET and Dalamud Plugin Framework
+- Newtonsoft.Json for API communication
+- ImGui for user interface
+
+## License
+
+AGPL-3.0-or-later
 
 * XIVLauncher, FINAL FANTASY XIV, and Dalamud have all been installed and the game has been run with Dalamud at least once.
 * XIVLauncher is installed to its default directories and configurations.

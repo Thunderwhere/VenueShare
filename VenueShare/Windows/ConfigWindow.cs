@@ -24,14 +24,8 @@ public class ConfigWindow : Window, IDisposable
     public override void PreDraw()
     {
         // Flags must be added or removed before Draw() is being called, or they won't apply
-        if (Configuration.IsConfigWindowMovable)
-        {
-            Flags &= ~ImGuiWindowFlags.NoMove;
-        }
-        else
-        {
-            Flags |= ImGuiWindowFlags.NoMove;
-        }
+        // Make the window movable by default
+        Flags &= ~ImGuiWindowFlags.NoMove;
     }
 
     public override void Draw()
@@ -82,20 +76,6 @@ public class ConfigWindow : Window, IDisposable
 
         ImGui.Spacing();
         ImGui.Separator();
-
-        // Legacy settings
-        var configValue = Configuration.SomePropertyToBeSavedAndWithADefault;
-        if (ImGui.Checkbox("Random Config Bool", ref configValue))
-        {
-            Configuration.SomePropertyToBeSavedAndWithADefault = configValue;
-            Configuration.Save();
-        }
-
-        var movable = Configuration.IsConfigWindowMovable;
-        if (ImGui.Checkbox("Movable Config Window", ref movable))
-        {
-            Configuration.IsConfigWindowMovable = movable;
-            Configuration.Save();
-        }
+        ImGui.Text("Configuration saved automatically when changes are made.");
     }
 }

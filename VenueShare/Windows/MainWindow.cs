@@ -1,17 +1,13 @@
-﻿using System;
+using System;
 using System.Numerics;
-using Dalamud.Interface.Utility;
-using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 using ImGuiNET;
-using Lumina.Excel.Sheets;
 using VenueShare.Models;
 
 namespace VenueShare.Windows;
 
 public class MainWindow : Window, IDisposable
 {
-    private string goatImagePath;
     private Plugin plugin;
     private VenueLocation? currentLocation;
     private VenueData[] foundVenues = Array.Empty<VenueData>();
@@ -19,7 +15,7 @@ public class MainWindow : Window, IDisposable
     // We give this window a hidden ID using ##
     // So that the user will see "VenueShare" as window title,
     // but for ImGui the ID is "VenueShare##MainWindow"
-    public MainWindow(Plugin plugin, string goatImagePath)
+    public MainWindow(Plugin plugin)
         : base("VenueShare##MainWindow", ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
     {
         SizeConstraints = new WindowSizeConstraints
@@ -28,7 +24,6 @@ public class MainWindow : Window, IDisposable
             MaximumSize = new Vector2(float.MaxValue, float.MaxValue)
         };
 
-        this.goatImagePath = goatImagePath;
         this.plugin = plugin;
     }
 
@@ -49,9 +44,7 @@ public class MainWindow : Window, IDisposable
             ImGui.Text($"Ward: {currentLocation.Ward}, Plot: {currentLocation.Plot}");
             ImGui.Text($"Territory: {currentLocation.TerritoryName}");
             
-            ImGui.Spacing();
-            
-            if (ImGui.Button("Share Venue Location"))
+            if (ImGui.Button("Share Current Venue"))
             {
                 ShareCurrentVenue();
             }
@@ -62,103 +55,50 @@ public class MainWindow : Window, IDisposable
                 SearchLocalVenues();
             }
         }
-        else if (plugin.LocationService.IsInHousingDistrict())
-        {
-            ImGui.TextUnformatted("In housing district but unable to detect exact location.");
-        }
         else
         {
-            ImGui.TextUnformatted("Not currently in a housing district.");
+            ImGui.Text("No location detected. Make sure you're in a residential district.");
         }
 
+        // Debug/Test Section
         ImGui.Spacing();
+        ImGui.Text("Debug Tools");
         ImGui.Separator();
+        
+        if (ImGui.Button("Test Ward/Plot Detection"))
+        {
+            var location = plugin.LocationService.GetCurrentLocation();
+            if (location != null)
+            {
+                Plugin.Log.Info($"Detected: {location.District} Ward {location.Ward}, Plot {location.Plot}");
+            }
+        }
 
         // Display found venues
         if (foundVenues.Length > 0)
         {
-            ImGui.Text($"Found {foundVenues.Length} venue(s):");
+            ImGui.Spacing();
+            ImGui.Text($"Found {foundVenues.Length} venues:");
+            ImGui.Separator();
             
-            using (var child = ImRaii.Child("VenuesList", new Vector2(0, 200), true))
+            foreach (var venue in foundVenues)
             {
-                if (child.Success)
+                ImGui.Text($"• {venue.Name}");
+                if (!string.IsNullOrEmpty(venue.Description))
                 {
-                    foreach (var venue in foundVenues)
-                    {
-                        ImGui.Text($"• {venue.Name}");
-                        if (!string.IsNullOrEmpty(venue.Description))
-                        {
-                            using (ImRaii.PushIndent(20f))
-                            {
-                                ImGui.TextWrapped(venue.Description);
-                            }
-                        }
-                        ImGui.Spacing();
-                    }
+                    ImGui.Text($"  {venue.Description}");
                 }
+                ImGui.Spacing();
             }
         }
 
         ImGui.Spacing();
         ImGui.Separator();
 
-        // Configuration and legacy content
-        ImGui.TextUnformatted($"Configuration setting: {plugin.Configuration.SomePropertyToBeSavedAndWithADefault}");
-
+        // Plugin Settings
         if (ImGui.Button("Show Settings"))
         {
             plugin.ToggleConfigUI();
-        }
-
-        ImGui.Spacing();
-
-        // Legacy goat image section
-        using (var child = ImRaii.Child("LegacyContent", Vector2.Zero, true))
-        {
-            if (child.Success)
-            {
-                ImGui.TextUnformatted("Have a goat:");
-                var goatImage = Plugin.TextureProvider.GetFromFile(goatImagePath).GetWrapOrDefault();
-                if (goatImage != null)
-                {
-                    using (ImRaii.PushIndent(55f))
-                    {
-                        ImGui.Image(goatImage.ImGuiHandle, new Vector2(goatImage.Width, goatImage.Height));
-                    }
-                }
-                else
-                {
-                    ImGui.TextUnformatted("Image not found.");
-                }
-
-                ImGuiHelpers.ScaledDummy(20.0f);
-
-                // Player information
-                var localPlayer = Plugin.ClientState.LocalPlayer;
-                if (localPlayer == null)
-                {
-                    ImGui.TextUnformatted("Our local player is currently not loaded.");
-                    return;
-                }
-
-                if (!localPlayer.ClassJob.IsValid)
-                {
-                    ImGui.TextUnformatted("Our current job is currently not valid.");
-                    return;
-                }
-
-                ImGui.TextUnformatted($"Our current job is ({localPlayer.ClassJob.RowId}) \"{localPlayer.ClassJob.Value.Abbreviation.ExtractText()}\"");
-
-                var territoryId = Plugin.ClientState.TerritoryType;
-                if (Plugin.DataManager.GetExcelSheet<TerritoryType>().TryGetRow(territoryId, out var territoryRow))
-                {
-                    ImGui.TextUnformatted($"We are currently in ({territoryId}) \"{territoryRow.PlaceName.Value.Name.ExtractText()}\"");
-                }
-                else
-                {
-                    ImGui.TextUnformatted("Invalid territory.");
-                }
-            }
         }
     }
 
