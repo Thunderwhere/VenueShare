@@ -12,13 +12,9 @@ public class ConfigWindow : Window, IDisposable
     // We give this window a constant ID using ###
     // This allows for labels being dynamic, like "{FPS Counter}fps###XYZ counter window",
     // and the window ID will always be "###XYZ counter window" for ImGui
-    public ConfigWindow(Plugin plugin) : base("A Wonderful Configuration Window###With a constant ID")
+    public ConfigWindow(Plugin plugin) : base("VenueShare Configuration###VenueShareConfig")
     {
-        Flags = ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar |
-                ImGuiWindowFlags.NoScrollWithMouse;
-
-        Size = new Vector2(232, 90);
-        SizeCondition = ImGuiCond.Always;
+        Flags = ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.AlwaysAutoResize;
 
         Configuration = plugin.Configuration;
     }
@@ -40,12 +36,58 @@ public class ConfigWindow : Window, IDisposable
 
     public override void Draw()
     {
-        // can't ref a property, so use a local copy
+        ImGui.Text("Discord Bot Configuration");
+        ImGui.Separator();
+
+        // Enable venue sharing checkbox
+        var enableSharing = Configuration.EnableVenueSharing;
+        if (ImGui.Checkbox("Enable Venue Sharing", ref enableSharing))
+        {
+            Configuration.EnableVenueSharing = enableSharing;
+            Configuration.Save();
+        }
+
+        ImGui.Spacing();
+
+        // Discord Bot URL
+        var botUrl = Configuration.DiscordBotUrl;
+        ImGui.Text("Discord Bot URL:");
+        if (ImGui.InputText("##BotUrl", ref botUrl, 256))
+        {
+            Configuration.DiscordBotUrl = botUrl;
+            Configuration.Save();
+        }
+
+        ImGui.Spacing();
+
+        // Discord Channel ID
+        var channelId = Configuration.DiscordChannelId;
+        ImGui.Text("Discord Channel ID:");
+        if (ImGui.InputText("##ChannelId", ref channelId, 64))
+        {
+            Configuration.DiscordChannelId = channelId;
+            Configuration.Save();
+        }
+
+        ImGui.Spacing();
+
+        // Bot Auth Token
+        var authToken = Configuration.BotAuthToken;
+        ImGui.Text("Bot Auth Token (Optional):");
+        if (ImGui.InputText("##AuthToken", ref authToken, 256, ImGuiInputTextFlags.Password))
+        {
+            Configuration.BotAuthToken = authToken;
+            Configuration.Save();
+        }
+
+        ImGui.Spacing();
+        ImGui.Separator();
+
+        // Legacy settings
         var configValue = Configuration.SomePropertyToBeSavedAndWithADefault;
         if (ImGui.Checkbox("Random Config Bool", ref configValue))
         {
             Configuration.SomePropertyToBeSavedAndWithADefault = configValue;
-            // can save immediately on change, if you don't want to provide a "Save and Close" button
             Configuration.Save();
         }
 

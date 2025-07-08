@@ -4,9 +4,11 @@ using Dalamud.Plugin;
 using System.IO;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
-using SamplePlugin.Windows;
+using VenueShare.Windows;
+using VenueShare.Services;
+using System;
 
-namespace SamplePlugin;
+namespace VenueShare;
 
 public sealed class Plugin : IDalamudPlugin
 {
@@ -18,16 +20,23 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static IPluginLog Log { get; private set; } = null!;
 
     private const string CommandName = "/pmycommand";
+    private const string VenueShareCommand = "/venueshare";
 
     public Configuration Configuration { get; init; }
+    public LocationService LocationService { get; init; }
+    public DiscordBotService DiscordBotService { get; init; }
 
-    public readonly WindowSystem WindowSystem = new("SamplePlugin");
+    public readonly WindowSystem WindowSystem = new("VenueShare");
     private ConfigWindow ConfigWindow { get; init; }
     private MainWindow MainWindow { get; init; }
 
     public Plugin()
     {
         Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
+
+        // Initialize services
+        LocationService = new LocationService(ClientState, DataManager, Log);
+        DiscordBotService = new DiscordBotService(Configuration, Log);
 
         // you might normally want to embed resources and load them from the manifest stream
         var goatImagePath = Path.Combine(PluginInterface.AssemblyLocation.Directory?.FullName!, "goat.png");
@@ -43,6 +52,11 @@ public sealed class Plugin : IDalamudPlugin
             HelpMessage = "A useful message to display in /xlhelp"
         });
 
+        CommandManager.AddHandler(VenueShareCommand, new CommandInfo(OnVenueShareCommand)
+        {
+            HelpMessage = "Share current venue location with Discord bot"
+        });
+
         PluginInterface.UiBuilder.Draw += DrawUI;
 
         // This adds a button to the plugin installer entry of this plugin which allows
@@ -54,7 +68,7 @@ public sealed class Plugin : IDalamudPlugin
 
         // Add a simple message to the log with level set to information
         // Use /xllog to open the log window in-game
-        // Example Output: 00:57:54.959 | INF | [SamplePlugin] ===A cool log message from Sample Plugin===
+        // Example Output: 00:57:54.959 | INF | [VenueShare] ===A cool log message from Sample Plugin===
         Log.Information($"===A cool log message from {PluginInterface.Manifest.Name}===");
     }
 
@@ -64,14 +78,45 @@ public sealed class Plugin : IDalamudPlugin
 
         ConfigWindow.Dispose();
         MainWindow.Dispose();
+        DiscordBotService.Dispose();
 
         CommandManager.RemoveHandler(CommandName);
+        CommandManager.RemoveHandler(VenueShareCommand);
     }
 
     private void OnCommand(string command, string args)
     {
         // in response to the slash command, just toggle the display status of our main ui
         ToggleMainUI();
+    }
+
+    private async void OnVenueShareCommand(string command, string args)
+    {
+        try
+        {
+            var location = LocationService.GetCurrentLocation();
+            if (location == null)
+            {
+                Log.Info("Not currently in a housing district or unable to detect location");
+                return;
+            }
+
+            var playerName = ClientState.LocalPlayer?.Name.TextValue ?? "Unknown Player";
+            var success = await DiscordBotService.SendVenueSearchRequestAsync(location, playerName);
+            
+            if (success)
+            {
+                Log.Info($"Venue search request sent for {location.District} Ward {location.Ward} Plot {location.Plot} on {location.Server}");
+            }
+            else
+            {
+                Log.Warning("Failed to send venue search request");
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error processing venue share command");
+        }
     }
 
     private void DrawUI() => WindowSystem.Draw();
