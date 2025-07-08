@@ -52,7 +52,7 @@ public sealed class Plugin : IDalamudPlugin
 
         CommandManager.AddHandler(VenueShareCommand, new CommandInfo(OnVenueShareCommand)
         {
-            HelpMessage = "Share current venue location with Discord bot"
+            HelpMessage = "Share current location with Discord bot"
         });
 
         CommandManager.AddHandler(LocationTestCommand, new CommandInfo(OnLocationTestCommand)
@@ -105,15 +105,15 @@ public sealed class Plugin : IDalamudPlugin
             }
 
             var playerName = ClientState.LocalPlayer?.Name.TextValue ?? "Unknown Player";
-            var success = await DiscordBotService.SendVenueSearchRequestAsync(currentLocation, playerName);
+            var success = await DiscordBotService.ShareLocationAsync(currentLocation, playerName);
             
             if (success)
             {
-                Log.Info($"Venue search request sent for {currentLocation.District} Ward {currentLocation.Ward} Plot {currentLocation.Plot} on {currentLocation.Server}");
+                Log.Info($"Location shared for {currentLocation.District} Ward {currentLocation.Ward} Plot {currentLocation.Plot} on {currentLocation.Server}");
             }
             else
             {
-                Log.Warning("Failed to send venue search request");
+                Log.Warning("Failed to share location");
             }
         }
         catch (Exception ex)

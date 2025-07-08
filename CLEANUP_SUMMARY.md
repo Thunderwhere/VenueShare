@@ -38,8 +38,18 @@
 - ✅ Only logs important events (entering/leaving housing, location changes)
 - ✅ Fixed off-by-one error in ward/plot detection (game uses 0-indexed, display uses 1-indexed)
 
-### VenueShare.csproj
-- ✅ Removed goat.png content reference from build
+### DiscordBotService.cs
+- ✅ Fixed venue search API endpoint (api.ffxivvenues.com/venue)
+- ✅ Added dual deserialization (direct array vs wrapped object)
+- ✅ Improved error handling for HTML vs JSON responses
+- ✅ Added Discord bot search as primary method with API fallback
+- ✅ Client-side venue filtering by location
+- ✅ Robust JSON parsing with flexible converters for problematic data types
+- ✅ Dynamic fallback parsing for incompatible JSON structures
+
+### Models/VenueLocation.cs
+- ✅ Added FlexibleStringConverter to handle description fields that might be arrays
+- ✅ Improved JSON deserialization resilience
 
 ### Documentation
 - ✅ Completely rewrote README.md to focus on VenueShare functionality

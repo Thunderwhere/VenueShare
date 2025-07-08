@@ -10,7 +10,6 @@ public class MainWindow : Window, IDisposable
 {
     private Plugin plugin;
     private VenueLocation? currentLocation;
-    private VenueData[] foundVenues = Array.Empty<VenueData>();
 
     // We give this window a hidden ID using ##
     // So that the user will see "VenueShare" as window title,
@@ -48,12 +47,6 @@ public class MainWindow : Window, IDisposable
             {
                 ShareCurrentVenue();
             }
-            
-            ImGui.SameLine();
-            if (ImGui.Button("Search Local Venues"))
-            {
-                SearchLocalVenues();
-            }
         }
         else
         {
@@ -74,24 +67,6 @@ public class MainWindow : Window, IDisposable
             }
         }
 
-        // Display found venues
-        if (foundVenues.Length > 0)
-        {
-            ImGui.Spacing();
-            ImGui.Text($"Found {foundVenues.Length} venues:");
-            ImGui.Separator();
-            
-            foreach (var venue in foundVenues)
-            {
-                ImGui.Text($"• {venue.Name}");
-                if (!string.IsNullOrEmpty(venue.Description))
-                {
-                    ImGui.Text($"  {venue.Description}");
-                }
-                ImGui.Spacing();
-            }
-        }
-
         ImGui.Spacing();
         ImGui.Separator();
 
@@ -109,36 +84,20 @@ public class MainWindow : Window, IDisposable
         try
         {
             var playerName = Plugin.ClientState.LocalPlayer?.Name.TextValue ?? "Unknown Player";
-            var success = await plugin.DiscordBotService.SendVenueSearchRequestAsync(currentLocation, playerName);
+            var success = await plugin.DiscordBotService.ShareLocationAsync(currentLocation, playerName);
             
             if (success)
             {
-                Plugin.Log.Info("Venue location shared successfully!");
+                Plugin.Log.Info("Location shared successfully!");
             }
             else
             {
-                Plugin.Log.Warning("Failed to share venue location.");
+                Plugin.Log.Warning("Failed to share location.");
             }
         }
         catch (Exception ex)
         {
-            Plugin.Log.Error(ex, "Error sharing venue location");
-        }
-    }
-
-    private async void SearchLocalVenues()
-    {
-        if (currentLocation == null) return;
-
-        try
-        {
-            foundVenues = await plugin.DiscordBotService.SearchFFXIVVenuesAsync(currentLocation);
-            Plugin.Log.Info($"Found {foundVenues.Length} venues at current location");
-        }
-        catch (Exception ex)
-        {
-            Plugin.Log.Error(ex, "Error searching for venues");
-            foundVenues = Array.Empty<VenueData>();
+            Plugin.Log.Error(ex, "Error sharing location");
         }
     }
 }

@@ -1,6 +1,8 @@
 using Dalamud.Plugin.Services;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -27,7 +29,7 @@ public class DiscordBotService : IDisposable
         }
     }
 
-    public async Task<bool> SendVenueSearchRequestAsync(VenueLocation location, string requestedBy)
+    public async Task<bool> ShareLocationAsync(VenueLocation location, string requestedBy)
     {
         if (!_configuration.EnableVenueSharing || string.IsNullOrEmpty(_configuration.DiscordBotUrl))
         {
@@ -37,7 +39,7 @@ public class DiscordBotService : IDisposable
 
         try
         {
-            var request = new VenueSearchRequest
+            var request = new LocationShareRequest
             {
                 Location = location,
                 DiscordChannelId = _configuration.DiscordChannelId,
@@ -51,51 +53,20 @@ public class DiscordBotService : IDisposable
             
             if (response.IsSuccessStatusCode)
             {
-                _log.Info($"Successfully sent venue search request to Discord bot");
+                _log.Info($"Successfully shared location with Discord bot");
                 return true;
             }
             else
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
-                _log.Error($"Failed to send venue search request. Status: {response.StatusCode}, Content: {errorContent}");
+                _log.Error($"Failed to share location. Status: {response.StatusCode}, Content: {errorContent}");
                 return false;
             }
         }
         catch (Exception ex)
         {
-            _log.Error(ex, "Error sending venue search request to Discord bot");
+            _log.Error(ex, "Error sharing location with Discord bot");
             return false;
-        }
-    }
-
-    public async Task<VenueData[]> SearchFFXIVVenuesAsync(VenueLocation location)
-    {
-        try
-        {
-            // Build query parameters for ffxivvenues.com API
-            var queryParams = $"?server={Uri.EscapeDataString(location.Server)}" +
-                             $"&district={Uri.EscapeDataString(location.District)}" +
-                             $"&ward={location.Ward}" +
-                             $"&plot={location.Plot}";
-
-            var response = await _httpClient.GetAsync($"https://ffxivvenues.com/api/venues{queryParams}");
-            
-            if (response.IsSuccessStatusCode)
-            {
-                var json = await response.Content.ReadAsStringAsync();
-                var apiResponse = JsonConvert.DeserializeObject<FFXIVVenuesApiResponse>(json);
-                return apiResponse?.Venues ?? Array.Empty<VenueData>();
-            }
-            else
-            {
-                _log.Warning($"Failed to search FFXIV venues API. Status: {response.StatusCode}");
-                return Array.Empty<VenueData>();
-            }
-        }
-        catch (Exception ex)
-        {
-            _log.Error(ex, "Error searching FFXIV venues API");
-            return Array.Empty<VenueData>();
         }
     }
 

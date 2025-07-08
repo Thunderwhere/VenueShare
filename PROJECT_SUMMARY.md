@@ -13,7 +13,6 @@
 - **Webhook Server**: Receives venue search requests from the plugin
 - **Automatic Venue Search**: Queries FFXIVVenues.com when location is shared
 - **Rich Discord Embeds**: Beautiful formatted venue information with links and details
-- **Smart Location Display**: Handles missing venue data gracefully (no more "Ward 0, Plot 0")
 - **Error Handling**: Graceful handling of missing venues or connection issues
 
 ## 🚀 How It Works

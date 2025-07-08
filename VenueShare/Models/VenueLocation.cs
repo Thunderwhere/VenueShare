@@ -13,26 +13,9 @@ public class VenueLocation
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
 }
 
-public class VenueSearchRequest
+public class LocationShareRequest
 {
     public VenueLocation Location { get; set; } = new();
     public string DiscordChannelId { get; set; } = "";
     public string RequestedBy { get; set; } = "";
-}
-
-public class FFXIVVenuesApiResponse
-{
-    public VenueData[] Venues { get; set; } = Array.Empty<VenueData>();
-}
-
-public class VenueData
-{
-    public string Id { get; set; } = "";
-    public string Name { get; set; } = "";
-    public string Description { get; set; } = "";
-    public VenueLocation Location { get; set; } = new();
-    public string Website { get; set; } = "";
-    public string Discord { get; set; } = "";
-    public string[] Tags { get; set; } = Array.Empty<string>();
-    public bool IsActive { get; set; }
 }

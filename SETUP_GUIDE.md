@@ -64,8 +64,37 @@ async def create_webhook_server():
             print(f"Webhook error: {e}")
             return web.json_response({"error": "Internal server error"}, status=500)
     
+    async def venue_search_direct(request):
+        """Direct venue search endpoint for plugin to get venue data"""
+        try:
+            # Get query parameters
+            server = request.query.get('server', '')
+            district = request.query.get('district', '')
+            ward = request.query.get('ward', 0)
+            plot = request.query.get('plot', 0)
+            
+            # Build location object
+            location = {
+                'server': server,
+                'district': district,
+                'ward': int(ward) if ward else 0,
+                'plot': int(plot) if plot else 0
+            }
+            
+            # Search venues
+            matching_venues = search_venues_by_location(location)
+            
+            return web.json_response({
+                "venues": matching_venues
+            })
+            
+        except Exception as e:
+            print(f"Direct search error: {e}")
+            return web.json_response({"error": "Internal server error"}, status=500)
+
     app.router.add_get('/health', health_check)
     app.router.add_post('/venue-search', venue_search_webhook)
+    app.router.add_get('/search-venues', venue_search_direct)
     return app
 
 def search_venues_by_location(location):
