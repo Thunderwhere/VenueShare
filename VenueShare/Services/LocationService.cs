@@ -21,29 +21,59 @@ public class LocationService
     private readonly Dictionary<uint, string> housingDistricts = new()
     {
         // Limsa Lominsa - Mist
-        { 339, "Mist" },
-        { 340, "Mist" },
-        { 341, "Mist" },
+        { 339, "Mist" },      // Mist Ward 1-8
+        { 340, "Mist" },      // Mist Ward 9-16  
+        { 341, "Mist" },      // Mist Ward 17-24
         
         // Gridania - Lavender Beds
-        { 342, "Lavender Beds" },
-        { 343, "Lavender Beds" },
-        { 344, "Lavender Beds" },
+        { 342, "Lavender Beds" },  // Lavender Beds Ward 1-8
+        { 343, "Lavender Beds" },  // Lavender Beds Ward 9-16
+        { 344, "Lavender Beds" },  // Lavender Beds Ward 17-24
         
         // Ul'dah - Goblet
-        { 345, "Goblet" },
-        { 346, "Goblet" },
-        { 347, "Goblet" },
+        { 345, "Goblet" },    // Goblet Ward 1-8
+        { 346, "Goblet" },    // Goblet Ward 9-16
+        { 347, "Goblet" },    // Goblet Ward 17-24
         
         // Kugane - Shirogane
-        { 649, "Shirogane" },
-        { 650, "Shirogane" },
-        { 651, "Shirogane" },
+        { 649, "Shirogane" }, // Shirogane Ward 1-8
+        { 650, "Shirogane" }, // Shirogane Ward 9-16
+        { 651, "Shirogane" }, // Shirogane Ward 17-24
         
         // Foundation - Empyreum
-        { 979, "Empyreum" },
-        { 980, "Empyreum" },
-        { 981, "Empyreum" }
+        { 979, "Empyreum" },  // Empyreum Ward 1-8
+        { 980, "Empyreum" },  // Empyreum Ward 9-16
+        { 981, "Empyreum" },  // Empyreum Ward 17-24
+        
+        // Individual Housing Instances (for when inside a house)
+        // These are commonly in the 1000+ range and each represents a specific house instance
+        // We'll use a broader range to catch individual housing instances
+        // Note: These might all map to the same district based on the base territory
+    };
+    
+    // Extended housing detection for individual house instances
+    private readonly Dictionary<uint, uint> housingInstanceToDistrict = new()
+    {
+        // Map individual housing instance territory IDs to their base district territory ID
+        // Shirogane individual houses (1200s range) -> Shirogane ward territories
+        { 1249, 651 }, // Individual house -> Shirogane Ward 17-24
+        { 1251, 651 }, // Individual house -> Shirogane Ward 17-24
+        
+        // Add more mappings as you discover them:
+        // - Mist individual houses would likely map to 339-341
+        // - Lavender Beds individual houses would likely map to 342-344  
+        // - Goblet individual houses would likely map to 345-347
+        // - Empyreum individual houses would likely map to 979-981
+        // - Shirogane houses -> map to 649, 650, or 651 (based on ward)
+        // 💡 HOW TO ADD MORE INDIVIDUAL HOUSE MAPPINGS:
+        // 1. Visit an individual house in any district
+        // 2. Run /locationtest to get the Territory ID  
+        // 3. Add mapping: { TerritoryID, BaseDistrictID }
+        //    - Mist houses -> map to 339, 340, or 341 (based on ward)
+        //    - Lavender Beds houses -> map to 342, 343, or 344 (based on ward)  
+        //    - Goblet houses -> map to 345, 346, or 347 (based on ward)
+        //    - Empyreum houses -> map to 979, 980, or 981 (based on ward)
+        //    - Shirogane houses -> map to 649, 650, or 651 (based on ward)
     };
 
     public LocationService(IClientState clientState, IDataManager dataManager, IPluginLog log)
@@ -72,9 +102,34 @@ public class LocationService
             }
 
             // Check if we're in a housing district
-            if (!housingDistricts.TryGetValue(territoryId, out var district))
+            string? district = null;
+            if (housingDistricts.TryGetValue(territoryId, out var knownDistrict))
             {
-                // Only log if we were previously in a housing district
+                district = knownDistrict;
+            }
+            else if (housingInstanceToDistrict.TryGetValue(territoryId, out var baseDistrictId) && 
+                     housingDistricts.TryGetValue(baseDistrictId, out var mappedDistrict))
+            {
+                district = mappedDistrict;
+            }
+            else if (IsLikelyHousingInstance(territoryId))
+            {
+                // Try to determine district from territory ID patterns or HousingManager
+                district = DetermineDistrictFromInstance(territoryId);
+                if (string.IsNullOrEmpty(district))
+                {
+                    // Only log if we were previously in a housing district
+                    if (lastDetectedLocation != null)
+                    {
+                        log.Info($"Left housing district (unknown territory ID: {territoryId})");
+                        lastDetectedLocation = null;
+                    }
+                    return null;
+                }
+            }
+            else
+            {
+                // Not a housing district at all
                 if (lastDetectedLocation != null)
                 {
                     log.Info("Left housing district");
@@ -298,6 +353,71 @@ public class LocationService
     public bool IsInHousingDistrict()
     {
         var territoryId = clientState.TerritoryType;
-        return housingDistricts.ContainsKey(territoryId);
+        
+        // Check known housing districts
+        if (housingDistricts.ContainsKey(territoryId))
+            return true;
+            
+        // Check mapped individual housing instances
+        if (housingInstanceToDistrict.ContainsKey(territoryId))
+            return true;
+            
+        // Check if it's likely a housing instance based on ID patterns
+        if (IsLikelyHousingInstance(territoryId))
+            return true;
+            
+        return false;
+    }
+
+    private bool IsLikelyHousingInstance(uint territoryId)
+    {
+        // Individual housing instances are typically in higher ID ranges
+        // Common ranges include 1000+, 1200+, etc.
+        // This is a heuristic to catch individual house instances
+        return territoryId >= 1000 && territoryId < 2000;
+    }
+
+    private string DetermineDistrictFromInstance(uint territoryId)
+    {
+        try
+        {
+            // Try to use HousingManager to determine which district we're in
+            unsafe
+            {
+                var housingManager = HousingManager.Instance();
+                if (housingManager != null)
+                {
+                    // Try to get the ward info which might help identify the district
+                    var currentWard = housingManager->GetCurrentWard();
+                    if (currentWard >= 0)
+                    {
+                        // Log this for debugging - you can use this info to build the mapping
+                        log.Info($"🏠 Detected individual housing instance - Territory ID: {territoryId}, Ward: {currentWard + 1}");
+                        
+                        // Try to guess based on territory ID ranges and ward info
+                        // Shirogane individual houses seem to be in 1200s range
+                        if (territoryId >= 1240 && territoryId < 1260)
+                        {
+                            // Based on your data, these appear to be Shirogane houses
+                            log.Info($"💡 Territory {territoryId} appears to be a Shirogane individual house - consider adding to housingInstanceToDistrict mapping");
+                            return "Shirogane";
+                        }
+                        
+                        // Other district ranges can be added as you discover them
+                        // Mist might be in a different 1000s range
+                        // Lavender Beds might be in another range, etc.
+                    }
+                }
+            }
+            
+            // Fallback: log the unknown territory for manual mapping
+            log.Info($"🔍 Unknown housing territory ID {territoryId} - please add to housingInstanceToDistrict mapping");
+            return "";
+        }
+        catch (Exception ex)
+        {
+            log.Error(ex, $"Error determining district for territory {territoryId}");
+            return "";
+        }
     }
 }

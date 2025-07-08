@@ -126,19 +126,27 @@ public sealed class Plugin : IDalamudPlugin
     {
         try
         {
-            var currentLocation = LocationService.GetCurrentLocation();
-            if (currentLocation == null)
-            {
-                Log.Info("❌ Not currently in a housing district or unable to detect location");
-                return;
-            }
-
+            var territoryId = ClientState.TerritoryType;
+            var isHousingDistrict = LocationService.IsInHousingDistrict();
+            
             Log.Info($"📍 Location Test Results:");
-            Log.Info($"   Server: {currentLocation.Server}");
-            Log.Info($"   District: {currentLocation.District}");
-            Log.Info($"   Ward: {currentLocation.Ward}");
-            Log.Info($"   Plot: {currentLocation.Plot}");
-            Log.Info($"   Territory: {currentLocation.TerritoryName} (ID: {currentLocation.TerritoryId})");
+            Log.Info($"   Current Territory ID: {territoryId}");
+            Log.Info($"   Is Housing District: {(isHousingDistrict ? "✅ Yes" : "❌ No")}");
+            
+            var currentLocation = LocationService.GetCurrentLocation();
+            if (currentLocation != null)
+            {
+                Log.Info($"   Server: {currentLocation.Server}");
+                Log.Info($"   District: {currentLocation.District}");
+                Log.Info($"   Ward: {currentLocation.Ward}");
+                Log.Info($"   Plot: {currentLocation.Plot}");
+                Log.Info($"   Territory: {currentLocation.TerritoryName} (ID: {currentLocation.TerritoryId})");
+            }
+            else
+            {
+                Log.Info($"   ❌ Not recognized as housing district");
+                Log.Info($"   💡 If this should be a housing area, add Territory ID {territoryId} to the housing districts list!");
+            }
 
             // Also show player position for debugging
             var player = ClientState.LocalPlayer;
@@ -149,6 +157,10 @@ public sealed class Plugin : IDalamudPlugin
             }
             
             Log.Info("📝 Use this info to verify ward/plot detection accuracy!");
+            if (!isHousingDistrict)
+            {
+                Log.Info("💡 Add unknown territory IDs to LocationService.housingDistricts dictionary");
+            }
         }
         catch (Exception ex)
         {
