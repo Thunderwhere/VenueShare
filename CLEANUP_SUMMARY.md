@@ -31,6 +31,13 @@
 - ✅ Updated command help messages
 - ✅ Cleaned up initialization log message
 
+### LocationService.cs
+- ✅ Reduced logging verbosity to prevent console spam
+- ✅ Added location caching to only log when location changes
+- ✅ Changed most Info logs to Debug level
+- ✅ Only logs important events (entering/leaving housing, location changes)
+- ✅ Fixed off-by-one error in ward/plot detection (game uses 0-indexed, display uses 1-indexed)
+
 ### VenueShare.csproj
 - ✅ Removed goat.png content reference from build
 

@@ -13,6 +13,9 @@ public class LocationService
     private readonly IClientState clientState;
     private readonly IDataManager dataManager;
     private readonly IPluginLog log;
+    
+    // Cache the last detected location to avoid spam logging
+    private VenueLocation? lastDetectedLocation;
 
     // Housing districts and their territory IDs
     private readonly Dictionary<uint, string> housingDistricts = new()
@@ -57,7 +60,6 @@ public class LocationService
             var localPlayer = clientState.LocalPlayer;
             if (localPlayer == null)
             {
-                log.Debug("Local player not available");
                 return null;
             }
 
@@ -66,14 +68,18 @@ public class LocationService
             
             if (!territorySheet.TryGetRow(territoryId, out var territoryRow))
             {
-                log.Debug($"Territory {territoryId} not found in data");
                 return null;
             }
 
             // Check if we're in a housing district
             if (!housingDistricts.TryGetValue(territoryId, out var district))
             {
-                log.Debug($"Territory {territoryId} is not a housing district");
+                // Only log if we were previously in a housing district
+                if (lastDetectedLocation != null)
+                {
+                    log.Info("Left housing district");
+                    lastDetectedLocation = null;
+                }
                 return null;
             }
 
@@ -89,7 +95,14 @@ public class LocationService
                 Plot = wardInfo.Plot
             };
 
-            log.Info($"Detected location: {location.District} Ward {location.Ward} Plot {location.Plot} on {location.Server}");
+            // Only log when location changes or when first entering a housing district
+            if (lastDetectedLocation == null || 
+                !LocationEquals(lastDetectedLocation, location))
+            {
+                log.Info($"Location changed: {location.District} Ward {location.Ward} Plot {location.Plot} on {location.Server}");
+                lastDetectedLocation = location;
+            }
+            
             return location;
         }
         catch (Exception ex)
@@ -110,10 +123,13 @@ public class LocationService
                 var currentWard = housingManager->GetCurrentWard();
                 var currentPlot = housingManager->GetCurrentPlot();
                 
-                if (currentWard > 0 && currentPlot > 0)
+                if (currentWard >= 0 && currentPlot >= 0)
                 {
-                    log.Info($"[HousingManager] Detected Ward {currentWard}, Plot {currentPlot}");
-                    return (currentWard, currentPlot);
+                    // Game values are 0-indexed, but display is 1-indexed, so add 1
+                    var displayWard = currentWard + 1;
+                    var displayPlot = currentPlot + 1;
+                    log.Debug($"[HousingManager] Ward {displayWard}, Plot {displayPlot}");
+                    return (displayWard, displayPlot);
                 }
             }
 
@@ -125,7 +141,7 @@ public class LocationService
                 var wardFromMap = ExtractWardFromMapId(mapInfo);
                 if (wardFromMap > 0)
                 {
-                    log.Info($"[AgentMap] Detected Ward {wardFromMap} from map ID {mapInfo}");
+                    log.Debug($"[AgentMap] Ward {wardFromMap} from map ID {mapInfo}");
                     // Still need to determine plot, use position-based detection
                     var plotFromPosition = GetPlotFromPosition();
                     return (wardFromMap, plotFromPosition);
@@ -136,7 +152,7 @@ public class LocationService
             var (ward, plot) = AnalyzeLocationFromUI();
             if (ward > 0)
             {
-                log.Info($"[UI Analysis] Detected Ward {ward}, Plot {plot}");
+                log.Debug($"[UI Analysis] Ward {ward}, Plot {plot}");
                 return (ward, plot);
             }
 
@@ -144,11 +160,11 @@ public class LocationService
             var positionBased = EstimateWardPlotFromPosition();
             if (positionBased.Ward > 0)
             {
-                log.Info($"[Position] Estimated Ward {positionBased.Ward}, Plot {positionBased.Plot}");
+                log.Debug($"[Position] Estimated Ward {positionBased.Ward}, Plot {positionBased.Plot}");
                 return positionBased;
             }
 
-            log.Warning("Could not determine ward/plot, using defaults");
+            log.Debug("Could not determine ward/plot, using defaults");
             return (1, 1); // Fallback
         }
         catch (Exception ex)
@@ -170,10 +186,12 @@ public class LocationService
             case 339: // Mist
             case 340:
             case 341:
-                return ((int)(mapId - 7) % 24) + 1; // Rough estimation
+                // Map IDs are 0-indexed, so add 1 for display
+                return ((int)(mapId - 7) % 24) + 1;
             case 342: // Lavender Beds  
             case 343:
             case 344:
+                // Map IDs are 0-indexed, so add 1 for display
                 return ((int)(mapId - 7) % 24) + 1;
             default:
                 return 0;
@@ -196,6 +214,7 @@ public class LocationService
             var z = (int)position.Z;
             
             // Simple grid-based estimation (this would need refinement)
+            // Ensure we return 1-indexed values for display
             var plotEstimate = ((Math.Abs(x) / 50) + (Math.Abs(z) / 50)) % 60 + 1;
             return Math.Max(1, Math.Min(60, plotEstimate));
         }
@@ -231,6 +250,7 @@ public class LocationService
             // This is a rough approximation and would need fine-tuning for each district
             
             // Use position to estimate ward (housing districts are laid out in a grid)
+            // Start with 1-indexed values for display
             var estimatedWard = 1;
             var estimatedPlot = 1;
             
@@ -240,18 +260,21 @@ public class LocationService
             var z = position.Z;
             
             // Estimate ward based on general coordinate ranges (needs refinement)
+            // Ensure result is 1-indexed
             if (Math.Abs(x) > 100)
             {
                 estimatedWard = (int)((Math.Abs(x) / 100) % 24) + 1;
             }
             
             // Estimate plot based on local coordinates within ward
+            // Ensure result is 1-indexed
             if (Math.Abs(z) > 50)
             {
                 estimatedPlot = (int)((Math.Abs(z) / 20) % 60) + 1;
             }
             
-            log.Debug($"Position-based estimate: Ward {estimatedWard}, Plot {estimatedPlot} (at {x:F1}, {z:F1})");
+            // Only log at Debug level to avoid spam
+            // log.Debug($"Position-based estimate: Ward {estimatedWard}, Plot {estimatedPlot} (at {x:F1}, {z:F1})");
             
             return (estimatedWard, estimatedPlot);
         }
@@ -260,6 +283,16 @@ public class LocationService
             log.Error(ex, "Error in position-based estimation");
             return (1, 1);
         }
+    }
+
+    private bool LocationEquals(VenueLocation? loc1, VenueLocation? loc2)
+    {
+        if (loc1 == null || loc2 == null) return false;
+        
+        return loc1.Server == loc2.Server &&
+               loc1.District == loc2.District &&
+               loc1.Ward == loc2.Ward &&
+               loc1.Plot == loc2.Plot;
     }
 
     public bool IsInHousingDistrict()
