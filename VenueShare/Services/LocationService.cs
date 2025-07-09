@@ -21,59 +21,55 @@ public class LocationService
     private readonly Dictionary<uint, string> housingDistricts = new()
     {
         // Limsa Lominsa - Mist
-        { 339, "Mist" },      // Mist Ward 1-8
-        { 340, "Mist" },      // Mist Ward 9-16  
-        { 341, "Mist" },      // Mist Ward 17-24
+        { 339, "Mist" },      // Mist Ward 1-8?
+        { 340, "Mist" },      // Mist Ward 9-16?  
+        { 341, "Mist" },      // Mist Ward 17-24?
         
         // Gridania - Lavender Beds
-        { 342, "Lavender Beds" },  // Lavender Beds Ward 1-8
-        { 343, "Lavender Beds" },  // Lavender Beds Ward 9-16
-        { 344, "Lavender Beds" },  // Lavender Beds Ward 17-24
+        { 342, "Lavender Beds" },  // Lavender Beds Ward 1-8?
+        { 343, "Lavender Beds" },  // Lavender Beds Ward 9-16?
+        { 344, "Lavender Beds" },  // Lavender Beds Ward 17-24?
         
         // Ul'dah - Goblet
-        { 345, "Goblet" },    // Goblet Ward 1-8
-        { 346, "Goblet" },    // Goblet Ward 9-16
-        { 347, "Goblet" },    // Goblet Ward 17-24
+        { 345, "Goblet" },    // Goblet Ward 1-8?
+        { 346, "Goblet" },    // Goblet Ward 9-16?
+        { 347, "Goblet" },    // Goblet Ward 17-24?
         
         // Kugane - Shirogane
-        { 649, "Shirogane" }, // Shirogane Ward 1-8
-        { 650, "Shirogane" }, // Shirogane Ward 9-16
-        { 651, "Shirogane" }, // Shirogane Ward 17-24
+        { 649, "Shirogane" }, // Shirogane Ward 1-8?
+        { 650, "Shirogane" }, // Shirogane Ward 9-16?
+        { 651, "Shirogane" }, // Shirogane Ward 17-24?
         
         // Foundation - Empyreum
-        { 979, "Empyreum" },  // Empyreum Ward 1-8
-        { 980, "Empyreum" },  // Empyreum Ward 9-16
-        { 981, "Empyreum" },  // Empyreum Ward 17-24
+        { 979, "Empyreum" },  // Empyreum Ward 1-8?
+        { 980, "Empyreum" },  // Empyreum Ward 9-16?
+        { 981, "Empyreum" },  // Empyreum Ward 17-24?
         
-        // Individual Housing Instances (for when inside a house)
-        // These are commonly in the 1000+ range and each represents a specific house instance
-        // We'll use a broader range to catch individual housing instances
-        // Note: These might all map to the same district based on the base territory
     };
     
     // Extended housing detection for individual house instances
     private readonly Dictionary<uint, uint> housingInstanceToDistrict = new()
     {
         // Map individual housing instance territory IDs to their base district territory ID
-        // Shirogane individual houses (1200s range) -> Shirogane ward territories
-        { 1249, 651 }, // Individual house -> Shirogane Ward 17-24
-        { 1251, 651 }, // Individual house -> Shirogane Ward 17-24
+        // Shirogane individual houses (1200s range?) -> Shirogane ward territories
+        { 1249, 651 }, // Individual house -> Shirogane?
+        { 1251, 651 }, // Individual house -> Shirogane?
         
         // Add more mappings as you discover them:
         // - Mist individual houses would likely map to 339-341
         // - Lavender Beds individual houses would likely map to 342-344  
         // - Goblet individual houses would likely map to 345-347
         // - Empyreum individual houses would likely map to 979-981
-        // - Shirogane houses -> map to 649, 650, or 651 (based on ward)
+        // - Shirogane houses -> map to 649, 650, or 651
         // 💡 HOW TO ADD MORE INDIVIDUAL HOUSE MAPPINGS:
         // 1. Visit an individual house in any district
         // 2. Run /locationtest to get the Territory ID  
         // 3. Add mapping: { TerritoryID, BaseDistrictID }
-        //    - Mist houses -> map to 339, 340, or 341 (based on ward)
-        //    - Lavender Beds houses -> map to 342, 343, or 344 (based on ward)  
-        //    - Goblet houses -> map to 345, 346, or 347 (based on ward)
-        //    - Empyreum houses -> map to 979, 980, or 981 (based on ward)
-        //    - Shirogane houses -> map to 649, 650, or 651 (based on ward)
+        //    - Mist houses -> map to 339, 340, or 341
+        //    - Lavender Beds houses -> map to 342, 343, or 344 
+        //    - Goblet houses -> map to 345, 346, or 347
+        //    - Empyreum houses -> map to 979, 980, or 981
+        //    - Shirogane houses -> map to 649, 650, or 651
     };
 
     public LocationService(IClientState clientState, IDataManager dataManager, IPluginLog log)

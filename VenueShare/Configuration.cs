@@ -17,7 +17,6 @@ public class Configuration : IPluginConfiguration
     public string BotAuthToken { get; set; } = "";
     public bool EnableVenueSharing { get; set; } = true;
 
-    // the below exist just to make saving less cumbersome
     public void Save()
     {
         Plugin.PluginInterface.SavePluginConfig(this);
