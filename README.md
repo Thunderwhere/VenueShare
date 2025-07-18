@@ -16,10 +16,10 @@ A Dalamud plugin that integrates with Discord bots to share venue location infor
 
 ## Setup
 
-1. **Configure Discord Bot**: See `SETUP_GUIDE.md` for complete Discord bot integration instructions
-2. **Install Plugin**: Place the plugin DLL in your Dalamud plugins folder
-3. **Configure Settings**: Use `/venuesettings` to open settings and configure:
+1. **Install Plugin**: Place the plugin DLL in your Dalamud plugins folder
+2. **Configure Settings**: Use `/venuesettings` to open settings and configure:
    - Discord Bot URL (e.g., `http://localhost:8080`)
+   - - Currently only available on request
    - Discord Channel ID where venue info should be posted
    - Enable Venue Sharing checkbox
 
