@@ -5,7 +5,7 @@ A Dalamud plugin that integrates with Discord bots to share venue location infor
 ## Features
 
 - **Automatic Location Detection**: Detects your current housing district, ward, and plot
-- **Discord Integration**: Sends venue location data to Discord via webhook
+- **Discord Integration**: Sends venue location data to Discord Bot
 - **Simple Configuration**: Easy setup through in-game settings window
 
 ## Commands
@@ -21,7 +21,6 @@ A Dalamud plugin that integrates with Discord bots to share venue location infor
    - Discord Bot URL (e.g., `http://localhost:8080`)
    - - Currently only available on request
    - Discord Channel ID where venue info should be posted
-   - Enable Venue Sharing checkbox
 
 ## How It Works
 
@@ -42,7 +41,6 @@ A Dalamud plugin that integrates with Discord bots to share venue location infor
 
 ### Location Detection Methods
 
-- Memory scanning for ward/plot information
 - Map territory analysis
 - Position-based detection as fallback
 - Server name detection from game state
@@ -50,8 +48,3 @@ A Dalamud plugin that integrates with Discord bots to share venue location infor
 ## License
 
 AGPL-3.0-or-later
-
-* XIVLauncher, FINAL FANTASY XIV, and Dalamud have all been installed and the game has been run with Dalamud at least once.
-* XIVLauncher is installed to its default directories and configurations.
-  * If a custom path is required for Dalamud's dev directory, it must be set with the `DALAMUD_HOME` environment variable.
-* A .NET Core 8 SDK has been installed and configured, or is otherwise available. (In most cases, the IDE will take care of this.)
